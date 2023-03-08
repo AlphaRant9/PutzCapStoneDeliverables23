@@ -5,6 +5,6 @@ while True:
     result, error = basic.run('<stdin>', text)
 
     if error:
-        print(error.as_string())
+        print(error.asString())
     else:
         print(result)
