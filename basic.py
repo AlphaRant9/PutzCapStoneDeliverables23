@@ -13,6 +13,9 @@ class Error:
 class IllegalCharError(Error):
     def __init__(self, details):
         super().__init__('Illegal Character', details)
+    
+    def as_string(self):
+        return super().as_string()
 
 TT_INT = 'TT_INT'
 TT_FLOAT = 'TT_FLOAT'
@@ -29,8 +32,8 @@ class Token:
         self.value = value
         
     def __repr__(self):
-        if self.value: return f'{self.type}:{self.value}'
-        return f'{self.type}'
+        if self.value != None: return f'{self.type}:{self.value}'
+        else: return f'{self.type}'
 
 class Lexer:
     def __init__(self, text):
@@ -73,7 +76,8 @@ class Lexer:
             else:
                 char = self.current_char
                 self.advance()
-                return [], IllegalCharError("'" + char + "'")
+                error = IllegalCharError("'" + char + "'")
+                return [], error
 
         return tokens, None
     

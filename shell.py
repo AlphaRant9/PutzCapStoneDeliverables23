@@ -5,5 +5,5 @@ while True:
     
     result, error = basic.run(text)
 
-    if error: print(error.as_string)
+    if error: print(error.as_string())
     else: print(result)
