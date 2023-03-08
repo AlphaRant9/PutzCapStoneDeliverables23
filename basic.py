@@ -41,15 +41,16 @@ class Lexer:
 
     def advance(self):
         self.pos += 1
-        self.surrent_char = self.text[self.pos] if self.pos < len(self.text) else None
-    
+        if (self.pos < len(self.text)): self.current_char = self.text[self.pos]
+        else: self.current_char = None
+            
     def make_tokens(self):
         tokens = []
 
         while self.current_char != None:
             if (self.current_char in ' \t'):
                 self.advance()
-            elif self.current_char in DIGITS:
+            elif self.current_char in DIGITS + '.':
                 tokens.append(self.make_number())
             elif (self.current_char == '+'):
                 tokens.append(Token(TT_PLUS))
@@ -71,7 +72,7 @@ class Lexer:
                 self.advance()
             else:
                 char = self.current_char
-                self.advance
+                self.advance()
                 return [], IllegalCharError("'" + char + "'")
 
         return tokens, None
