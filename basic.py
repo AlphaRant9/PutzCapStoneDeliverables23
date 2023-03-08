@@ -6,7 +6,7 @@ class Error:
         self.error_name = error_name
         self.details = details
     
-    def as_string(self):
+    def asString(self):
         result = f'{self.error_name}: {self.details}'
         return result
 
@@ -14,8 +14,8 @@ class IllegalCharError(Error):
     def __init__(self, details):
         super().__init__('Illegal Character', details)
     
-    def as_string(self):
-        return super().as_string()
+    def asString(self):
+        return super().asString()
 
 TT_INT = 'TT_INT'
 TT_FLOAT = 'TT_FLOAT'
@@ -39,68 +39,71 @@ class Lexer:
     def __init__(self, text):
         self.text = text
         self.pos = -1
-        self.current_char = None
+        self.currentChar = None
         self.advance()
 
     def advance(self):
         self.pos += 1
-        if (self.pos < len(self.text)): self.current_char = self.text[self.pos]
-        else: self.current_char = None
+        if (self.pos < len(self.text)): self.currentChar = self.text[self.pos]
+        else: self.currentChar = None
             
-    def make_tokens(self):
+    def makeTokens(self):
         tokens = []
 
-        while self.current_char != None:
-            if (self.current_char in ' \t'):
+        while self.currentChar != None:
+            if (self.currentChar in ' \t'):
                 self.advance()
-            elif self.current_char in DIGITS + '.':
-                tokens.append(self.make_number())
-            elif (self.current_char == '+'):
+            elif self.currentChar in DIGITS + '.':
+                tokens.append(self.makeNumber())
+            elif (self.currentChar == '+'):
                 tokens.append(Token(TT_PLUS))
                 self.advance()
-            elif (self.current_char == '-'):
+            elif (self.currentChar == '-'):
                 tokens.append(Token(TT_MINUS))
                 self.advance()
-            elif (self.current_char == '*'):
+            elif (self.currentChar == '*'):
                 tokens.append(Token(TT_MUL))
                 self.advance()
-            elif (self.current_char == '/'):
+            elif (self.currentChar == '/'):
                 tokens.append(Token(TT_DIV))
                 self.advance()
-            elif (self.current_char == '('):
+            elif (self.currentChar == '('):
                 tokens.append(Token(TT_LPAREN))
                 self.advance()
-            elif (self.current_char == ')'):
+            elif (self.currentChar == ')'):
                 tokens.append(Token(TT_RPAREN))
                 self.advance()
             else:
-                char = self.current_char
+                char = self.currentChar
                 self.advance()
                 error = IllegalCharError("'" + char + "'")
                 return [], error
 
         return tokens, None
     
-    def make_number(self):
-        num_str = ''
-        dot_count = 0
+    def makeNumber(self):
+        numStr = ''
+        dotCount = 0
 
-        while self.current_char != None and self.current_char in DIGITS + '.':
-            if self.current_char == '.':
-                if (dot_count == 1): break
-                dot_count += 1
-                num_str += '.'
+        while self.currentChar != None and self.currentChar in DIGITS + '.':
+            if self.currentChar == '.':
+                if (dotCount == 1): break
+                dotCount += 1
+                numStr += '.'
             else:
-                num_str += self.current_char
+                numStr += self.currentChar
             self.advance()
 
-        if (dot_count == 0):
-            return Token(TT_INT, int(num_str))
+        if (dotCount == 0):
+            return Token(TT_INT, int(numStr))
         else:
-            return Token(TT_FLOAT, float(num_str))
+            return Token(TT_FLOAT, float(numStr))
 
-def run(text):
+def identifyTokens(text):
     lexer = Lexer(text)
-    tokens, error = lexer.make_tokens()
+    tokens, error = lexer.makeTokens()
+
+    if error: print(error.asString())
+    else: print(tokens)
 
     return tokens, error
