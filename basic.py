@@ -1,6 +1,10 @@
+import string
+
 from stringsWithArrows import *
 
 DIGITS = '0123456789'
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 
 class Error:
@@ -83,6 +87,15 @@ TT_POW = 'POW'
 TT_LPAREN = 'LPAREN'
 TT_RPAREN = 'RPAREN'
 TT_EOF = 'EOF'
+TT_KEYWORD = 'KEYWORD'
+TT_IDENTIFIER = 'IDENTIFIER'
+TT_EQ = 'EQ'
+
+KEYWORDS = [
+
+    'var'
+
+]
 
 
 class Token:
@@ -99,7 +112,8 @@ class Token:
             self.posEnd = posEnd
 
     def __repr__(self):
-        if self.value: return f'{self.type}:{self.value}'
+        if self.value:
+            return f'{self.type}:{self.value}'
         return f'{self.type}'
 
 
@@ -123,6 +137,8 @@ class Lexer:
                 self.advance()
             elif self.currentChar in DIGITS:
                 tokens.append(self.makeNumber())
+            elif self.currentChar.lower() in LETTERS:
+                tokens.append(self.makeIdentifier())
             elif self.currentChar == '+':
                 tokens.append(Token(TT_PLUS, posStart=self.pos))
                 self.advance()
@@ -144,6 +160,9 @@ class Lexer:
             elif self.currentChar == ')':
                 tokens.append(Token(TT_RPAREN, posStart=self.pos))
                 self.advance()
+            elif self.currentChar == '=':
+                tokens.append(Token(TT_EQ, posStart=self.pos))
+                self.advance()
             else:
                 posStart = self.pos.copy()
                 char = self.currentChar
@@ -158,7 +177,7 @@ class Lexer:
         dotCount = 0
         posStart = self.pos.copy()
 
-        while self.currentChar != None and self.currentChar in DIGITS + '.':
+        while self.currentChar is not None and self.currentChar in DIGITS + '.':
             if self.currentChar == '.':
                 if dotCount == 1: break
                 dotCount += 1
@@ -171,6 +190,17 @@ class Lexer:
             return Token(TT_INT, int(numStr), posStart, self.pos)
         else:
             return Token(TT_FLOAT, float(numStr), posStart, self.pos)
+
+    def makeIdentifier(self):
+        idStr = ''
+        posStart = self.pos.copy()
+
+        while self.currentChar is not None and self.currentChar in LETTERS_DIGITS + '_':
+            idStr += self.currentChar
+            self.advance()
+
+        tokType = TT_KEYWORD if idStr in KEYWORDS else TT_IDENTIFIER
+        return Token(tokType, idStr, posStart, self.pos)
 
 
 class NumberNode:
@@ -216,7 +246,8 @@ class ParseResult:
 
     def register(self, res):
         if isinstance(res, ParseResult):
-            if res.error: self.error = res.error
+            if res.error:
+                self.error = res.error
             return res.node
 
         return res
