@@ -401,19 +401,21 @@ class Parser:
         return res.success(node)
 
     def binOp(self, funcA, ops, funcB=None):
-        if funcB == None:
+        if funcB is None:
             funcB = funcA
 
         res = ParseResult()
         left = res.register(funcA())
-        if res.error: return res
+        if res.error:
+            return res
 
         while self.currentTok.type in ops:
             opTok = self.currentTok
             res.registerAdvancement()
             self.advance()
             right = res.register(funcB())
-            if res.error: return res
+            if res.error:
+                return res
             left = BinOpNode(left, opTok, right)
 
         return res.success(left)
@@ -425,7 +427,8 @@ class RTResult:
         self.error = None
 
     def register(self, res):
-        if res.error: self.error = res.error
+        if res.error:
+            self.error = res.error
         return res.value
 
     def success(self, value):
