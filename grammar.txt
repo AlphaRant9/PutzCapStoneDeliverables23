@@ -6,3 +6,5 @@ term    : factor ((MUL|DIV) factor)*
 
 factor  : INT|FLOAT|IDENTIFIER
 		: LPAREN expr RPAREN
+
+123 == 123
