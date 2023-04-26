@@ -645,6 +645,31 @@ class SymbolTable:
         del self.symbols[name]
 
 
+def visitVarAccessNode(node, context):
+    res = RTResult()
+    varName = node.varNameTok.value
+    value = context.symbolTable.get(varName)
+
+    if not value:
+        return res.failure(
+            RTError(
+                node.posStart,
+                node.posEnd,
+                f"'{varName}' is not defined",
+                context
+            )
+        )
+
+    value = value.copy().setPos(node.posStart, node.posEnd)
+    return res.success(value)
+
+
+def visitNumberNode(node, context):
+    return RTResult().success(
+        Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
+    )
+
+
 class Interpreter:
     def visit(self, node, context):
         methodName = f'visit{type(node).__name__}'
@@ -653,29 +678,6 @@ class Interpreter:
 
     def noVisitMethod(self, node, context):
         raise Exception(f'No visit{type(node).__name__} method defined')
-
-    def visitNumberNode(self, node, context):
-        return RTResult().success(
-            Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
-        )
-
-    def visitVarAccessNode(self, node, context):
-        res = RTResult()
-        varName = node.varNameTok.value
-        value = context.symbolTable.get(varName)
-
-        if not value:
-            return res.failure(
-                RTError(
-                    node.posStart,
-                    node.posEnd,
-                    f"'{varName}' is not defined",
-                    context
-                )
-            )
-
-        value = value.copy().setPos(node.posStart, node.posEnd)
-        return res.success(value)
 
     def visitVarAssignNode(self, node, context):
         res = RTResult()

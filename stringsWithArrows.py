@@ -4,7 +4,8 @@ def stringsWithArrows(text, posStart, posEnd):
     # Calculate indices
     idxStart = max(text.rfind('\n', 0, posStart.idx), 0)
     idxEnd = text.find('\n', idxStart + 1)
-    if idxEnd < 0: idxEnd = len(text)
+    if idxEnd < 0:
+        idxEnd = len(text)
 
     # Generate each line
     lineCount = posEnd.ln - posStart.ln + 1
@@ -21,6 +22,7 @@ def stringsWithArrows(text, posStart, posEnd):
         # Re-calculate indices
         idxStart = idxEnd
         idxEnd = text.find('\n', idxStart + 1)
-        if idxEnd < 0: idxEnd = len(text)
+        if idxEnd < 0:
+            idxEnd = len(text)
 
     return result.replace('\t', '')
