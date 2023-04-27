@@ -107,7 +107,11 @@ KEYWORDS = [
     'var',
     'and',
     'or',
-    'not'
+    'not',
+    'if',
+    'then',
+    'elif',
+    'else'
 
 ]
 
@@ -324,6 +328,16 @@ class UnaryOpNode:
         return f'({self.opTok}, {self.node})'
 
 
+class IfNode:
+
+    def __init__(self, cases, elseCase):
+        self.cases = cases
+        self.elseCase = elseCase
+
+        self.posStart = cases[0][0]
+        self.posEnd = (self.elseCase or self.cases[len(self.cases) - 1][0]).posEnd
+
+
 class ParseResult:
     def __init__(self):
         self.error = None
@@ -399,10 +413,70 @@ class Parser:
                     "Expected ')'"
                 ))
 
+        elif tok.matches(TT_KEYWORD, 'if'):
+            ifExpr = res.register(self.ifExpr())
+            if res.error:
+                return res
+            return res.success(ifExpr)
+
         return res.failure(InvalidSyntaxError(
             tok.posStart, tok.posEnd,
             "Expected int, float, identifier, '+', '-' or '('"
         ))
+
+    def ifExpr(self):
+        res = ParseResult()
+        cases = []
+        elseCase = None
+
+        if not self.currentTok.matches(TT_KEYWORD, 'if'):
+            return res.failure(InvalidSyntaxError(self.currentTok.posStart, self.currentTok.posEnd, f"Expected 'if'"))
+
+        res.registerAdvancement()
+        self.advance()
+        condition = res.register(self.expr())
+        if res.error:
+            return res
+
+        if not self.currentTok.matches(TT_KEYWORD, 'then'):
+            return res.failure(InvalidSyntaxError(self.currentTok.posStart, self.currentTok.posEnd, f"Expected 'then'"))
+
+        res.registerAdvancement()
+        self.advance()
+
+        expr = res.register(self.expr())
+        if res.error:
+            return res
+        cases.append((condition, expr))
+
+        while self.currentTok.matches(TT_KEYWORD, 'elif'):
+            res.registerAdvancement()
+            self.advance()
+            condition = res.register(self.expr())
+            if res.error:
+                return res
+
+            if not self.currentTok.matches(TT_KEYWORD, 'then'):
+                return res.failure(
+                    InvalidSyntaxError(self.currentTok.posStart, self.currentTok.posEnd, f"Expected 'then'"))
+
+            res.registerAdvancement()
+            self.advance()
+
+            expr = res.register(self.expr())
+            if res.error:
+                return res
+            cases.append((condition, expr))
+
+        if self.currentTok.matches(TT_KEYWORD, 'else'):
+            res.registerAdvancement()
+            self.advance()
+
+            elseCase = res.register(self.expr())
+            if res.error:
+                return res
+
+        return res.success(IfNode(cases, elseCase))
 
     def power(self):
         return self.binOp(self.atom, (TT_POW,), self.factor)
@@ -746,6 +820,22 @@ class Interpreter:
             return res.failure(error)
         else:
             return res.success(number.setPos(node.posStart, node.posEnd))
+
+    def visitIfNode(self, node, context):
+        res = RTResult()
+
+        for condition, expr in node.cases:
+            conditionValue = res.register(self.visit(condition, context))
+            if res.error:
+                return res
+
+            if conditionValue.isTrue():
+                exprValue = res.register(self.visit(node.expr, context))
+                if res.error:
+                    return res
+                return res.success(exprValue)
+
+            
 
 
 globalSymbolTable = SymbolTable()
