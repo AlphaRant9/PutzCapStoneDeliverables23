@@ -334,7 +334,7 @@ class IfNode:
         self.cases = cases
         self.elseCase = elseCase
 
-        self.posStart = cases[0][0]
+        self.posStart = cases[0][0].posStart
         self.posEnd = (self.elseCase or self.cases[len(self.cases) - 1][0]).posEnd
 
 
@@ -475,6 +475,8 @@ class Parser:
             elseCase = res.register(self.expr())
             if res.error:
                 return res
+
+            elseCase = expr
 
         return res.success(IfNode(cases, elseCase))
 
@@ -688,6 +690,9 @@ class Number:
         copy.setContext(self.context)
         return copy
 
+    def isTrue(self):
+        return self.value != 0
+
     def __repr__(self):
         return str(self.value)
 
@@ -830,12 +835,18 @@ class Interpreter:
                 return res
 
             if conditionValue.isTrue():
-                exprValue = res.register(self.visit(node.expr, context))
+                exprValue = res.register(self.visit(expr, context))
                 if res.error:
                     return res
                 return res.success(exprValue)
 
-            
+        if node.elseCase:
+            elseValue = res.register(self.visit(node.elseCase, context))
+            if res.error:
+                return res
+            return res.success(elseValue)
+
+        return res.success(None)
 
 
 globalSymbolTable = SymbolTable()
