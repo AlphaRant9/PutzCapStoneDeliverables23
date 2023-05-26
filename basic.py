@@ -476,7 +476,7 @@ class Parser:
             if res.error:
                 return res
 
-            elseCase = expr
+            # elseCase = expr
 
         return res.success(IfNode(cases, elseCase))
 
