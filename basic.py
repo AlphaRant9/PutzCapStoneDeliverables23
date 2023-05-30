@@ -549,7 +549,7 @@ class Parser:
 
         return res.failure(InvalidSyntaxError(
             tok.posStart, tok.posEnd,
-            "Expected ')', 'var', 'if', 'for', 'while', 'fun', int, float, identifier, '+', '-' or '('"
+            "Expected 'var', 'if', 'for', 'while', 'fun', int, float, identifier, '+', '-' or '('"
         ))
 
     def ifExpr(self):
@@ -878,7 +878,7 @@ class Parser:
                 InvalidSyntaxError(
                     self.currentTok.posStart,
                     self.currentTok.posEnd,
-                    "Expected 'var', int, float, identifier, '+', '-', '(', or 'not'"
+                    "Expected 'var', 'if', 'for', 'while', 'fun', int, float, identifier, '+', '-', '(', or 'not'"
                 )
             )
 
@@ -1146,7 +1146,14 @@ class Function(Value):
 
         return res.success(value)
 
-    
+    def copy(self):
+        copy = Function(self.name, self.bodyNode, self.argNames)
+        copy.setContext(self.context)
+        copy.setPos(self.posStart, self.posEnd)
+        return copy
+
+    def __repr__(self):
+        return f"<function {self.name}>"
 
 
 class Context:
@@ -1351,6 +1358,39 @@ class Interpreter:
                 return res
 
         return res.success(None)
+
+    def visitFuncDefNode(self, node, context):
+        res = RTResult()
+
+        funcName = node.varNameTok.value if node.varNameTok else None
+        bodyNode = node.bodyNode
+        argNames = [argName.value for argName in node.argNameToks]
+        funcValue = Function(funcName, bodyNode, argNames).setContext(context).setPos(node.posStart, node.posEnd)
+
+        if node.varNameTok:
+            context.symbolTable.set(funcName, funcValue)
+
+        return res.success(funcValue)
+
+    def visitCallNode(self, node, context):
+        res = RTResult()
+        args = []
+
+        valueToCall = res.register(self.visit(node.nodeToCall, context))
+        if res.error:
+            return res
+        valueToCall = valueToCall.copy().setPos(node.posStart, node.posEnd)
+
+        for argNode in node.argNodes:
+            args.append(res.register(self.visit(argNode, context)))
+            if res.error:
+                return res
+
+        returnValue = res.register(valueToCall.execute(args))
+        if res.error:
+            return res
+
+        return res.success(returnValue)
 
 
 globalSymbolTable = SymbolTable()
