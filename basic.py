@@ -589,7 +589,7 @@ class Parser:
 
         return res.success(ForNode(varName, startValue, endValue, stepValue, body))
 
-    def whileNode(self):
+    def whileExpr(self):
         res = ParseResult()
 
         if not self.currentTok.matches(TT_KEYWORD, 'while'):
@@ -1021,6 +1021,23 @@ class Interpreter:
             if res.error:
                 return res
 # 6:15
+        return res.success(None)
+
+    def visitWhileNode(self, node, context):
+        res = RTResult()
+
+        while True:
+            condition = res.register(self.visit(node.conditionNode, context))
+            if res.error:
+                return res
+
+            if not condition.isTrue():
+                break
+
+            res.register(self.visit(node.bodyNode, context))
+            if res.error:
+                return res
+
         return res.success(None)
 
 
