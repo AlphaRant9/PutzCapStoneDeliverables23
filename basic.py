@@ -1,5 +1,6 @@
 import string
 import os
+import math
 
 from stringsWithArrows import *
 
@@ -1224,6 +1225,7 @@ class Number(Value):
 Number.null = Number(0)
 Number.true = Number(1)
 Number.false = Number(0)
+Number.mathPi = Number(math.pi)
 
 
 class String(Value):
@@ -1839,6 +1841,7 @@ globalSymbolTable = SymbolTable()
 globalSymbolTable.set("null", Number.null)
 globalSymbolTable.set("true", Number.true)
 globalSymbolTable.set("false", Number.false)
+globalSymbolTable.set("pi", Number.mathPi)
 globalSymbolTable.set("print", BuiltInFunction.print)
 globalSymbolTable.set("printRet", BuiltInFunction.printRet)
 globalSymbolTable.set("input", BuiltInFunction.input)
