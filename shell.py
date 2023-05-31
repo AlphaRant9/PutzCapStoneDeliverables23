@@ -11,4 +11,4 @@ while True:
 
     elif result:
 
-        print(result)
+        print(repr(result))

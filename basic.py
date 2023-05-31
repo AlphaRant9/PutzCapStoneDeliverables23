@@ -1220,6 +1220,7 @@ class Number(Value):
     def __repr__(self):
         return str(self.value)
 
+
 Number.null = Number(0)
 Number.true = Number(1)
 Number.false = Number(0)
@@ -1250,6 +1251,9 @@ class String(Value):
         copy.setPos(self.posStart, self.posEnd)
         copy.setContext(self.context)
         return copy
+
+    def __str__(self):
+        return self.value
 
     def __repr__(self):
         return f'"{self.value}"'
@@ -1303,10 +1307,13 @@ class List(Value):
             return None, Value.illegalOperation(self, other)
 
     def copy(self):
-        copy = List(self.elements[:])
+        copy = List(self.elements)
         copy.setPos(self.posStart, self.posEnd)
         copy.setContext(self.context)
         return copy
+
+    def __str__(self):
+        return f'{", ".join([str(x) for x in self.elements])}'
 
     def __repr__(self):
         return f'[{", ".join([str(x) for x in self.elements])}]'
@@ -1323,6 +1330,7 @@ class BaseFunction(Value):
         return newContext
 
     def checkArgs(self, argNames, args):
+        res = RTResult()
         if len(args) > len(argNames):
             return res.failure(RTError(
                 self.posStart, self.posEnd,
@@ -1432,8 +1440,8 @@ class BuiltInFunction(BaseFunction):
     execute_input.argNames = []
 
     def execute_inputInt(self, execCtx):
-        text = input()
         while True:
+            text = input()
             try:
                 number = int(text)
                 break
@@ -1443,8 +1451,8 @@ class BuiltInFunction(BaseFunction):
     execute_inputInt.argNames = []
 
     def execute_inputFloat(self, execCtx):
-        text = input()
         while True:
+            text = input()
             try:
                 number = float(text)
                 break
@@ -1492,7 +1500,7 @@ class BuiltInFunction(BaseFunction):
                 execCtx
             ))
 
-        list_.elements.append(value)
+        list_.elements.append(value_)
         return RTResult().success(Number.null)
     execute_append.argNames = ['list', 'value']
 
@@ -1549,6 +1557,7 @@ class BuiltInFunction(BaseFunction):
         return RTResult().success(Number.null)
     execute_pop.argNames = ['listA', 'listB']
 
+
 BuiltInFunction.print       = BuiltInFunction("print")
 BuiltInFunction.printRet    = BuiltInFunction("printRet")
 BuiltInFunction.input       = BuiltInFunction("input")
@@ -1562,6 +1571,7 @@ BuiltInFunction.isFunction  = BuiltInFunction("isFunction")
 BuiltInFunction.append      = BuiltInFunction("append")
 BuiltInFunction.pop         = BuiltInFunction("pop")
 BuiltInFunction.extend      = BuiltInFunction("extend")
+
 
 class Context:
     def __init__(self, displayName, parent=None, parentEntryPos=None):
@@ -1637,7 +1647,7 @@ class Interpreter:
                 )
             )
 
-        value = value.copy().setPos(node.posStart, node.posEnd)
+        value = value.copy().setPos(node.posStart, node.posEnd).setContext(context)
         return res.success(value)
 
     def visitVarAssignNode(self, node, context):
@@ -1821,6 +1831,7 @@ class Interpreter:
         if res.error:
             return res
 
+        returnValue = returnValue.copy().setPos(node.posStart, node.posEnd).setContext(context)
         return res.success(returnValue)
 
 
@@ -1828,6 +1839,20 @@ globalSymbolTable = SymbolTable()
 globalSymbolTable.set("null", Number.null)
 globalSymbolTable.set("true", Number.true)
 globalSymbolTable.set("false", Number.false)
+globalSymbolTable.set("print", BuiltInFunction.print)
+globalSymbolTable.set("printRet", BuiltInFunction.printRet)
+globalSymbolTable.set("input", BuiltInFunction.input)
+globalSymbolTable.set("inputInt", BuiltInFunction.inputInt)
+globalSymbolTable.set("inputFloat", BuiltInFunction.inputFloat)
+globalSymbolTable.set("clear", BuiltInFunction.clear)
+globalSymbolTable.set("cls", BuiltInFunction.clear)
+globalSymbolTable.set("isNum", BuiltInFunction.isNumber)
+globalSymbolTable.set("isStr", BuiltInFunction.isString)
+globalSymbolTable.set("isList", BuiltInFunction.isList)
+globalSymbolTable.set("isFun", BuiltInFunction.isNumber)
+globalSymbolTable.set("append", BuiltInFunction.append)
+globalSymbolTable.set("pop", BuiltInFunction.pop)
+globalSymbolTable.set("extend", BuiltInFunction.extend)
 
 
 def run(fn, text):
