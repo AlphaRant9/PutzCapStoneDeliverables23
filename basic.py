@@ -108,6 +108,7 @@ TT_LTE = 'LTE'
 TT_GTE = 'GTE'
 TT_COMMA = 'COMMA'
 TT_ARROW = 'ARROW'
+TT_NEWLINE = 'NEWLINE'
 
 KEYWORDS = [
 
@@ -123,7 +124,8 @@ KEYWORDS = [
     'to',
     'step',
     'while',
-    'fun'
+    'fun',
+    'end'
 
 ]
 
@@ -167,6 +169,9 @@ class Lexer:
 
         while self.currentChar is not None:
             if self.currentChar in ' \t':
+                self.advance()
+            elif self.currentChar in ';\n':
+                tokens.append(Token(TT_NEWLINE, self.pos))
                 self.advance()
             elif self.currentChar in DIGITS:
                 tokens.append(self.makeNumber())
@@ -470,6 +475,7 @@ class ParseResult:
         self.error = None
         self.node = None
         self.advanceCount = 0
+        self.toReverseCount = 0
 
     def registerAdvancement(self):
         self.advanceCount += 1
@@ -479,6 +485,12 @@ class ParseResult:
         if res.error:
             self.error = res.error
         return res.node
+
+    def tryRegister(self, res):
+        if res.error:
+            self.toReverseCount = res.advanceCount
+            return None
+        return self.register(res)
 
     def success(self, node):
         self.node = node
@@ -496,14 +508,23 @@ class Parser:
         self.tokIdx = -1
         self.advance()
 
-    def advance(self, ):
+    def advance(self):
         self.tokIdx += 1
         if self.tokIdx < len(self.tokens):
             self.currentTok = self.tokens[self.tokIdx]
         return self.currentTok
 
+    def reverse(self, amount=1):
+        self.tokIdx -= amount
+        self.updateCurrentTok()
+        return self.currentTok
+
+    def updateCurrentTok(self):
+        if 0 <= self.tokIdx < len(self.tokens):
+            self.currentTok = self.tokens[self.tokIdx]
+
     def parse(self):
-        res = self.expr()
+        res = self.statements()
         if not res.error and self.currentTok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
@@ -954,6 +975,48 @@ class Parser:
                                                   "Expected int, float, '[', identifier, '+', '-', '(', or 'not'"))
 
         return res.success(node)
+
+    def statements(self):
+        res = ParseResult()
+        statements = []
+        posStart = self.currentTok.posStart.copy()
+
+        while self.currentTok.type == TT_NEWLINE:
+            res.registerAdvancement()
+            self.advance()
+
+        statement = res.register(self.expr())
+        if res.error:
+            return res
+        statements.append(statement)
+
+        moreStatements = True
+
+        while True:
+            newLineCount = 0
+            while self.currentTok.type == TT_NEWLINE:
+                res.registerAdvancement()
+                self.advance()
+                newLineCount += 1
+            if newLineCount == 0:
+                moreStatements = False
+
+            if not moreStatements:
+                break
+
+            statement = res.tryRegister(self.expr())
+            if not statement:
+                self.reverse(res.toReverseCount)
+                moreStatements = False
+                continue
+
+            statements.append(statement)
+
+        return res.success(ListNode(
+            statements,
+            posStart,
+            self.currentTok.posEnd.copy()
+        ))
 
     def expr(self):
 
